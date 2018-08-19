@@ -1,35 +1,51 @@
 package main
 
 import (
+	"database/sql"
+	"flag"
 	"log"
 	"net/http"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/vermeerp/snippetbox/pkg/models"
 )
 
 func main() {
-	// Use the http.NewServeMux() function to initialize a new serve mux. Then use
-	// the mux.HandleFunc() method to register our Home function as the handler for
-	// the "/" URL pattern.
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", Home)
-	mux.HandleFunc("/snippet", ShowSnippet)
-	mux.HandleFunc("/snippet/new", NewSnippet)
 
-	// Create a file server which serves files out of the "./ui/static" directory.
-	// As before, the path given to the http.Dir function is relative to our project
-	// repository root.
-	fileServer := http.FileServer(http.Dir("./ui/static"))
+	// Define command-line flags for the network address and location of the static
+	// files directory.
+	addr := flag.String("addr", ":4000", "HTTP network address")
+	dsn := flag.String("dsn", "sb:u4UHCQQs#Agoqgi@/snippetbox?parseTime=true", "MySQL DSN")
+	htmlDir := flag.String("html-dir", "./ui/html", "Path to HTML templates")
+	staticDir := flag.String("static-dir", "./ui/static", "Path to static assets")
+	flag.Parse()
 
-	// Use the mux.Handle() function to register the file server as the
-	// handler for all URL paths that start with "/static/". For matching
-	// paths, we strip the "/static" prefix before the request reaches the file
-	// server.
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	db := connect(*dsn)
+	defer db.Close()
 
-	// Use the http.ListenAndServe() function to start a new web server. We pass in
-	// two parameters: the TCP network address to listen on (in this case ":4000")
-	// and the serve mux we just created. If ListenAndServe() returns an error we
-	// use the log.Fatal() function to record the error message and exit the program.
-	log.Println("Starting server on :4000")
-	err := http.ListenAndServe(":4000", mux)
+	// Initialize a new instance of App containing the dependencies.
+	app := &App{
+		Database:  &models.Database{db},
+		HTMLDir:   *htmlDir,
+		StaticDir: *staticDir,
+	}
+
+	log.Printf("Starting server on %s\n", *addr)
+	err := http.ListenAndServe(*addr, app.Routes())
 	log.Fatal(err)
+}
+
+// The connect() function wraps sql.Open() and returns a sql.DB connection pool
+// for a given DSN.
+func connect(dsn string) *sql.DB {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
+
+	return db
 }
