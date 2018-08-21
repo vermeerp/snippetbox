@@ -1,21 +1,22 @@
 package main
 
 import (
-    "net/http"
+	"net/http"
+
+	"github.com/bmizerany/pat" // New import
 )
 
-// Routes handles routing events to the correct handler
-func (app *App) Routes() *http.ServeMux {
-    // Declare a serve mux and define the routes in exactly the same as before.
-    mux := http.NewServeMux()
-    mux.HandleFunc("/", app.Home)
-    mux.HandleFunc("/snippet", app.ShowSnippet)
-    mux.HandleFunc("/snippet/new", app.NewSnippet)
+// Change the signature so we're returning a http.Handler instead of a
+// *http.ServeMux.
+func (app *App) Routes() http.Handler {
+	mux := pat.New()
+	mux.Get("/", http.HandlerFunc(app.Home))
+	mux.Get("/snippet/new", http.HandlerFunc(app.NewSnippet))
+	mux.Post("/snippet/new", http.HandlerFunc(app.CreateSnippet))
+	mux.Get("/snippet/:id", http.HandlerFunc(app.ShowSnippet)) // Moved downwards
 
-    // Use the app.StaticDir field as the location of the static file directory.
-    fileServer := http.FileServer(http.Dir(app.StaticDir))
-    mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	fileServer := http.FileServer(http.Dir(app.StaticDir))
+	mux.Get("/static/", http.StripPrefix("/static", fileServer))
 
-    // Return the serve mux.
-    return mux
+	return mux
 }

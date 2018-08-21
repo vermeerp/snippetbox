@@ -8,10 +8,6 @@ import (
 // Home function  writes a plain-text "Hello from Snippetbox"
 // message as the HTTP response body.
 func (app *App) Home(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		app.NotFound(w)
-		return
-	}
 
 	// Fetch a slice of the latest snippets from the database.
 	snippets, err := app.Database.LatestSnippets()
@@ -28,7 +24,7 @@ func (app *App) Home(w http.ResponseWriter, r *http.Request) {
 
 // ShowSnippet handler function.
 func (app *App) ShowSnippet(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	id, err := strconv.Atoi(r.URL.Query().Get(":id"))
 	if err != nil || id < 1 {
 		app.NotFound(w)
 		return
@@ -54,4 +50,9 @@ func (app *App) ShowSnippet(w http.ResponseWriter, r *http.Request) {
 // NewSnippet handler function.
 func (app *App) NewSnippet(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("Display the new snippet form..."))
+}
+
+// Add a new placeholder handler function for creating a snippet.
+func (app *App) CreateSnippet(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Create a new snippet..."))
 }
