@@ -6,8 +6,7 @@ import (
 	"github.com/bmizerany/pat" // New import
 )
 
-// Change the signature so we're returning a http.Handler instead of a
-// *http.ServeMux.
+// Routes handles routing the request
 func (app *App) Routes() http.Handler {
 	mux := pat.New()
 	mux.Get("/", http.HandlerFunc(app.Home))

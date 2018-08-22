@@ -10,11 +10,12 @@ import (
 	"github.com/vermeerp/snippetbox/pkg/models" // New import
 )
 
-// Define a new HTMLData struct to act as a wrapper for the dynamic data we want
+// HTMLData struct acts as a wrapper for the dynamic data we want
 // to pass to our templates. For now this just contains the snippet data that we
 // want to display, which has the underling type *models.Snippet.
 type HTMLData struct {
-	Path string
+	Form     interface{}
+	Path     string
 	Snippet  *models.Snippet
 	Snippets []*models.Snippet
 }
@@ -25,16 +26,15 @@ func humanDate(t time.Time) string {
 	return t.Format("02 Jan 2006 at 15:04")
 }
 
-// Update the signature of RenderHTML() so that it accepts a new data parameter
-// containing a pointer to a HTMLData struct.
+// RenderHTML renders the HTML
 func (app *App) RenderHTML(w http.ResponseWriter, r *http.Request, page string, data *HTMLData) {
-    // If no data has been passed in, initialize a new empty HTMLData object.
-    if data == nil {
-        data = &HTMLData{}
-    }
+	// If no data has been passed in, initialize a new empty HTMLData object.
+	if data == nil {
+		data = &HTMLData{}
+	}
 
-    // Add the current request URL path to the data.
-    data.Path = r.URL.Path
+	// Add the current request URL path to the data.
+	data.Path = r.URL.Path
 
 	files := []string{
 		filepath.Join(app.HTMLDir, "base.html"),
