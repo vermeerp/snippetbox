@@ -7,16 +7,21 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/justinas/nosurf"
 	"github.com/vermeerp/snippetbox/pkg/models" // New import
 )
 
-// Define a new HTMLData struct to act as a wrapper for the dynamic data we want
+// HTMLData struct acts as a wrapper for the dynamic data we want
 // to pass to our templates. For now this just contains the snippet data that we
 // want to display, which has the underling type *models.Snippet.
 type HTMLData struct {
-	Path string
-	Snippet  *models.Snippet
-	Snippets []*models.Snippet
+	CSRFToken string
+	Flash     string
+	Form      interface{}
+	LoggedIn  bool
+	Path      string
+	Snippet   *models.Snippet
+	Snippets  []*models.Snippet
 }
 
 // Create a humanDate function which returns a nicely formated string
@@ -25,16 +30,26 @@ func humanDate(t time.Time) string {
 	return t.Format("02 Jan 2006 at 15:04")
 }
 
-// Update the signature of RenderHTML() so that it accepts a new data parameter
-// containing a pointer to a HTMLData struct.
+// RenderHTML renders the HTML
 func (app *App) RenderHTML(w http.ResponseWriter, r *http.Request, page string, data *HTMLData) {
-    // If no data has been passed in, initialize a new empty HTMLData object.
-    if data == nil {
-        data = &HTMLData{}
-    }
+	// If no data has been passed in, initialize a new empty HTMLData object.
+	if data == nil {
+		data = &HTMLData{}
+	}
 
-    // Add the current request URL path to the data.
-    data.Path = r.URL.Path
+	// Add the current request URL path to the data.
+	data.Path = r.URL.Path
+
+	// Always add the CSRF token to the data for our templates.
+	data.CSRFToken = nosurf.Token(r)
+
+	// Add the logged in status to the HTMLData.
+	var err error
+	data.LoggedIn, err = app.LoggedIn(r)
+	if err != nil {
+		app.ServerError(w, err)
+		return
+	}
 
 	files := []string{
 		filepath.Join(app.HTMLDir, "base.html"),
