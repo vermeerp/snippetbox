@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/justinas/nosurf"
 	"github.com/vermeerp/snippetbox/pkg/models" // New import
 )
 
@@ -14,10 +15,13 @@ import (
 // to pass to our templates. For now this just contains the snippet data that we
 // want to display, which has the underling type *models.Snippet.
 type HTMLData struct {
-	Form     interface{}
-	Path     string
-	Snippet  *models.Snippet
-	Snippets []*models.Snippet
+	CSRFToken string
+	Flash     string
+	Form      interface{}
+	LoggedIn  bool
+	Path      string
+	Snippet   *models.Snippet
+	Snippets  []*models.Snippet
 }
 
 // Create a humanDate function which returns a nicely formated string
@@ -35,6 +39,17 @@ func (app *App) RenderHTML(w http.ResponseWriter, r *http.Request, page string, 
 
 	// Add the current request URL path to the data.
 	data.Path = r.URL.Path
+
+	// Always add the CSRF token to the data for our templates.
+	data.CSRFToken = nosurf.Token(r)
+
+	// Add the logged in status to the HTMLData.
+	var err error
+	data.LoggedIn, err = app.LoggedIn(r)
+	if err != nil {
+		app.ServerError(w, err)
+		return
+	}
 
 	files := []string{
 		filepath.Join(app.HTMLDir, "base.html"),
